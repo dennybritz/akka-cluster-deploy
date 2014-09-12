@@ -29,7 +29,8 @@ object Main extends App {
       // No seed file specified, use this node as the first seed
       log.info("no seed file found, using default seeds")
       val port = config.getInt("app.port")
-      val localAddress = InetAddress.getLocalHost.getHostAddress.toString
+      val localAddress = Try(config.getString("app.host"))
+        .toOption.getOrElse(InetAddress.getLocalHost.getHostAddress.toString)
       List(AddressFromURIString.parse(s"akka.tcp://app@${localAddress}:${port}"))
   }
 
