@@ -1,0 +1,15 @@
+[Unit]
+Description=app-discovery@%i
+BindsTo=app@%i.service
+
+[Service]
+User=core
+EnvironmentFile=/etc/environment
+# Every 45 seconds, set the /announce/services/app-%i key to IP:PORT
+# The key expires after 60 seconds. Thus, if the app goes down the key will be removed.
+ExecStart=/bin/sh -c "while true; do etcdctl set /announce/services/app-%i ${COREOS_PUBLIC_IPV4}:%i --ttl 60; sleep 45; done"
+ExecStop=/usr/bin/etcdctl rm /announce/services/app-%i
+
+[X-Fleet]
+# This must be scheduled on the same machine as the corresponding application
+MachineOf=app@%i.service

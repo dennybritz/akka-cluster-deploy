@@ -1,0 +1,31 @@
+[Unit]
+Description=app
+After=docker.service
+Requires=app-discovery@%i.service
+
+[Service]
+User=core
+TimeoutStartSec=0
+KillMode=none
+EnvironmentFile=/etc/environment
+
+# Remove old docker containers if they exist before starting
+ExecStartPre=-/usr/bin/docker kill app-%i
+ExecStartPre=-/usr/bin/docker rm app-%i
+ExecStartPre=-/usr/bin/docker pull dennybritz/akka-cluster-deploy
+
+# Get the list of seed nodes from etcd and write it to /home/core/app-config/seeds.txt
+ExecStartPre=/bin/sh -c "mkdir -p /home/core/app-config; etcdctl ls /announce/services/ | xargs -L1 etcdctl get > /home/core/app-config/seeds.txt"
+
+# Start the docker container:
+# --net=host: Don't virtualize the networking, use the host interfaces directly
+# -v /home/core/app-config:/app/config:ro: Mount the seeds file as a read-only
+# -e Set environment variables: The seeds file, the application port, and use the public ip
+ExecStart=/usr/bin/docker run --rm --name app-%i --net=host -v /home/core/app-config:/app/config:ro -e "APP_SEEDS_FILE=/app/config/seeds.txt" -e "APP_PORT=%i" -e "APP_HOST=${COREOS_PUBLIC_IPV4}" dennybritz/akka-cluster-deploy sbt run
+
+# When stopped, stop the docker container
+ExecStop=/usr/bin/docker stop app-%i
+
+[X-Fleet]
+# Don't run two applications on the same host
+Conflicts=app@*.service
