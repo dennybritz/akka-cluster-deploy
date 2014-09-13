@@ -1,15 +1,19 @@
 [Unit]
 Description=app
 After=docker.service
+# When we start this service we also start the discovery service
 Requires=app-discovery@%i.service
 
 [Service]
 User=core
 TimeoutStartSec=0
 KillMode=none
+
+# Read the local environment (needed to to get COREOS_PRIVATE_IPV4)
 EnvironmentFile=/etc/environment
 
-# Remove old docker containers if they exist before starting
+# Remove old docker containers with the same name if they exist
+# Pull the docker image from DockerHub
 ExecStartPre=-/usr/bin/docker kill app-%i
 ExecStartPre=-/usr/bin/docker rm app-%i
 ExecStartPre=-/usr/bin/docker pull dennybritz/akka-cluster-deploy
@@ -20,7 +24,7 @@ ExecStartPre=/bin/sh -c "mkdir -p /home/core/app-config; etcdctl ls /announce/se
 # Start the docker container:
 # --net=host: Don't virtualize the networking, use the host interfaces directly
 # -v /home/core/app-config:/app/config:ro: Mount the seeds file as a read-only
-# -e Set environment variables: The seeds file, the application port, and use the public ip
+# -e Set environment variables: The seeds file, the application port, and the local ip
 ExecStart=/usr/bin/docker run --rm --name app-%i --net=host -v /home/core/app-config:/app/config:ro -e "APP_SEEDS_FILE=/app/config/seeds.txt" -e "APP_PORT=%i" -e "APP_HOST=${COREOS_PRIVATE_IPV4}" dennybritz/akka-cluster-deploy /bin/bash -c "git pull; sbt run"
 
 # When stopped, stop the docker container

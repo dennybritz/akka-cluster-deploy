@@ -1,5 +1,6 @@
 [Unit]
 Description=app-discovery@%i
+# Stop this unit when we stop our application
 BindsTo=app@%i.service
 
 [Service]

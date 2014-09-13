@@ -10,7 +10,7 @@ fleetctl submit akka-cluster-deploy/deploy/coreos/app-discovery@.service
 fleetctl load app@5000.service
 fleetctl load app-discovery@5000.service
 
-# Start the units (discovery is started through the requirement)
+# Start the units (app-discovery is automatically started through the requirement)
 fleetctl start app@5000.service
 
 # Tail the application output to make sure it's running correctly
